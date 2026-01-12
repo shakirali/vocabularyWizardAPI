@@ -1,0 +1,40 @@
+from datetime import datetime
+from typing import List, Optional
+from pydantic import BaseModel
+import uuid
+
+
+class YearGroupInfo(BaseModel):
+    value: str
+    display_name: str
+    short_code: str
+
+
+class VocabularyItemBase(BaseModel):
+    year: str
+    word: str
+    meaning: str
+    antonyms: List[str] = []
+    example_sentences: List[str] = []
+
+
+class VocabularyItemCreate(VocabularyItemBase):
+    pass
+
+
+class VocabularyItemUpdate(BaseModel):
+    year: Optional[str] = None
+    word: Optional[str] = None
+    meaning: Optional[str] = None
+    antonyms: Optional[List[str]] = None
+    example_sentences: Optional[List[str]] = None
+
+
+class VocabularyItemResponse(VocabularyItemBase):
+    id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
