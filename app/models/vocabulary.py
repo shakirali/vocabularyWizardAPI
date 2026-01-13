@@ -1,11 +1,19 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import Column, String, Text, DateTime, UniqueConstraint, JSON
+from datetime import UTC, datetime
+
+from sqlalchemy import JSON, Column, DateTime, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
-from app.database import Base
+
 from app.core.config import settings
+from app.database import Base
 from app.models.common import UUIDType
+
+
+def utc_now():
+    """Return current UTC datetime. Used as default for SQLAlchemy columns."""
+    return datetime.now(UTC)
+
 
 # Use JSONB for PostgreSQL, JSON for SQLite
 if "postgresql" in settings.DATABASE_URL:
@@ -54,13 +62,12 @@ class VocabularyItem(Base):
     meaning = Column(Text, nullable=False)
     antonyms = Column(JSONType, default=list)
     example_sentences = Column(JSONType, default=list)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     # Relationships
-    progress = relationship("UserProgress", back_populates="vocabulary_item", cascade="all, delete-orphan")
-
-    __table_args__ = (
-        UniqueConstraint('year', 'word', name='uq_vocabulary_year_word'),
+    progress = relationship(
+        "UserProgress", back_populates="vocabulary_item", cascade="all, delete-orphan"
     )
 
+    __table_args__ = (UniqueConstraint("year", "word", name="uq_vocabulary_year_word"),)

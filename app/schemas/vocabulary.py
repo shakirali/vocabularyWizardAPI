@@ -1,7 +1,8 @@
+import uuid
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel
-import uuid
+
+from pydantic import BaseModel, ConfigDict
 
 
 class YearGroupInfo(BaseModel):
@@ -31,10 +32,8 @@ class VocabularyItemUpdate(BaseModel):
 
 
 class VocabularyItemResponse(VocabularyItemBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
-

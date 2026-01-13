@@ -1,15 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.database import get_db
+
 from app.api.deps import oauth2_scheme
-from app.services.auth_service import AuthService
-from app.schemas.user import UserCreate, UserResponse, UserLogin, TokenResponse
 from app.core.exceptions import UnauthorizedError, ValidationError
+from app.database import get_db
+from app.schemas.user import TokenResponse, UserCreate, UserLogin, UserResponse
+from app.services.auth_service import AuthService
 
 router = APIRouter()
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
 def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """Register a new user."""
     auth_service = AuthService(db)
@@ -22,7 +25,7 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
         # Catch any other unexpected errors
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred during registration: {str(e)}"
+            detail=f"An error occurred during registration: {str(e)}",
         )
 
 
@@ -36,10 +39,12 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
             access_token=result["access_token"],
             token_type=result["token_type"],
             expires_in=result["expires_in"],
-            user=result["user"]
+            user=result["user"],
         )
     except UnauthorizedError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e.detail))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e.detail)
+        )
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -52,14 +57,15 @@ def refresh_token(token: str = Depends(oauth2_scheme), db: Session = Depends(get
             access_token=result["access_token"],
             token_type=result["token_type"],
             expires_in=result["expires_in"],
-            user=result["user"]
+            user=result["user"],
         )
     except UnauthorizedError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e.detail))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e.detail)
+        )
 
 
 @router.post("/logout")
 def logout():
     """Logout user (token invalidation handled client-side with short expiration)."""
     return {"message": "Logged out successfully"}
-

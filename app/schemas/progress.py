@@ -1,7 +1,8 @@
+import uuid
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel
-import uuid
+
+from pydantic import BaseModel, ConfigDict
 
 
 class YearProgress(BaseModel):
@@ -34,6 +35,8 @@ class MarkMasteredRequest(BaseModel):
 
 
 class UserProgressResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     user_id: uuid.UUID
     vocabulary_item_id: uuid.UUID
@@ -41,12 +44,8 @@ class UserProgressResponse(BaseModel):
     is_mastered: bool
     mastered_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
-
 
 class PracticeRequest(BaseModel):
     vocabulary_item_id: uuid.UUID
     year: str
     correct: bool
-

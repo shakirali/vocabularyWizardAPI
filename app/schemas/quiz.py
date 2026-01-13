@@ -1,17 +1,17 @@
-from typing import List, Optional
-from pydantic import BaseModel
 import uuid
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict
 
 
 class QuizQuestionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     prompt: str
     options: List[str]
     correct_index: int
     type: str
-
-    class Config:
-        from_attributes = True
 
 
 class GenerateQuizRequest(BaseModel):
@@ -53,14 +53,13 @@ class SubmitQuizResponse(BaseModel):
 
 
 class SentenceQuestionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     sentence_template: str
     display_sentence: str
     correct_word: str
     options: List[str]
-
-    class Config:
-        from_attributes = True
 
 
 class GenerateSentenceRequest(BaseModel):
@@ -99,4 +98,3 @@ class SubmitSentenceResponse(BaseModel):
     incorrect_answers: int
     score_percentage: float
     results: List[SentenceResultItem]
-

@@ -1,9 +1,16 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import Column, String, Boolean, DateTime
+from datetime import UTC, datetime
+
+from sqlalchemy import Boolean, Column, DateTime, String
 from sqlalchemy.orm import relationship
+
 from app.database import Base
 from app.models.common import UUIDType
+
+
+def utc_now():
+    """Return current UTC datetime. Used as default for SQLAlchemy columns."""
+    return datetime.now(UTC)
 
 
 class User(Base):
@@ -15,9 +22,10 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     # Relationships
-    progress = relationship("UserProgress", back_populates="user", cascade="all, delete-orphan")
-
+    progress = relationship(
+        "UserProgress", back_populates="user", cascade="all, delete-orphan"
+    )

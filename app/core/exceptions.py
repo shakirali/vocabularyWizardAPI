@@ -5,7 +5,7 @@ class VocabularyNotFoundError(HTTPException):
     def __init__(self, vocabulary_id: str):
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Vocabulary item with id {vocabulary_id} not found"
+            detail=f"Vocabulary item with id {vocabulary_id} not found",
         )
 
 
@@ -14,10 +14,7 @@ class UserNotFoundError(HTTPException):
         detail = "User not found"
         if user_id:
             detail = f"User with id {user_id} not found"
-        super().__init__(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=detail
-        )
+        super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
 
 
 class UnauthorizedError(HTTPException):
@@ -31,10 +28,7 @@ class UnauthorizedError(HTTPException):
 
 class ForbiddenError(HTTPException):
     def __init__(self, detail: str = "Insufficient permissions"):
-        super().__init__(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=detail
-        )
+        super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
 
 class ValidationError(HTTPException):
@@ -43,7 +37,5 @@ class ValidationError(HTTPException):
         if field:
             error_detail["field"] = field
         super().__init__(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=error_detail
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=error_detail
         )
-

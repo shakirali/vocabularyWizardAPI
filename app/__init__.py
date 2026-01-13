@@ -1,2 +1,1 @@
 # FastAPI Vocabulary Backend Application
-

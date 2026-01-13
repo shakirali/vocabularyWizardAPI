@@ -1,5 +1,7 @@
-from typing import Generic, TypeVar, Optional, List, Type
+from typing import Generic, List, Optional, Type, TypeVar
+
 from sqlalchemy.orm import Session
+
 from app.database import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
@@ -34,4 +36,3 @@ class BaseRepository(Generic[ModelType]):
     def delete(self, obj: ModelType) -> None:
         self.db.delete(obj)
         self.db.commit()
-

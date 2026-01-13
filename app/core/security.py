@@ -1,38 +1,40 @@
-from datetime import datetime, timedelta
-from typing import Optional
-from jose import JWTError, jwt
-import bcrypt
-from app.core.config import settings
 import hashlib
+from datetime import UTC, datetime, timedelta
+from typing import Optional
+
+import bcrypt
+from jose import JWTError, jwt
+
+from app.core.config import settings
 
 
 def _preprocess_password(password: str) -> bytes:
     """
     Preprocess password to handle bcrypt's 72-byte limit.
-    
+
     Recommended approach: Pre-hash passwords longer than 72 bytes with SHA-256
     before passing to bcrypt. This ensures:
     - Consistent behavior (no truncation)
     - Better security (full password entropy preserved)
     - Standard industry practice
     """
-    password_bytes = password.encode('utf-8')
+    password_bytes = password.encode("utf-8")
     if len(password_bytes) > 72:
         # Pre-hash with SHA-256 to get a fixed 64-byte hex string
-        password_bytes = hashlib.sha256(password_bytes).hexdigest().encode('utf-8')
+        password_bytes = hashlib.sha256(password_bytes).hexdigest().encode("utf-8")
     return password_bytes
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash."""
     password_bytes = _preprocess_password(plain_password)
-    return bcrypt.checkpw(password_bytes, hashed_password.encode('utf-8'))
+    return bcrypt.checkpw(password_bytes, hashed_password.encode("utf-8"))
 
 
 def get_password_hash(password: str) -> str:
     """
     Hash a password using bcrypt with SHA-256 pre-hashing for long passwords.
-    
+
     This implements the recommended approach: passwords longer than 72 bytes
     are pre-hashed with SHA-256 before bcrypt hashing. This is a widely used
     pattern recommended by security experts.
@@ -40,36 +42,43 @@ def get_password_hash(password: str) -> str:
     password_bytes = _preprocess_password(password)
     salt = bcrypt.gensalt(rounds=12)
     hashed = bcrypt.hashpw(password_bytes, salt)
-    return hashed.decode('utf-8')
+    return hashed.decode("utf-8")
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Create a JWT access token."""
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+        expire = datetime.now(UTC) + timedelta(
+            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        )
+
     to_encode.update({"exp": expire, "type": "access"})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    encoded_jwt = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
     return encoded_jwt
 
 
 def create_refresh_token(data: dict) -> str:
     """Create a JWT refresh token."""
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    encoded_jwt = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
     return encoded_jwt
 
 
 def decode_token(token: str) -> Optional[dict]:
     """Decode and verify a JWT token."""
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
         return payload
     except JWTError:
         return None
-
