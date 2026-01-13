@@ -28,10 +28,10 @@ class Settings(BaseSettings):
     # API
     API_V1_PREFIX: str = "/api/v1"
 
-    # Ollama Configuration
-    OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "gemma2:2b"
-    OLLAMA_TIMEOUT: int = 30
+    # Ollama Configuration (required)
+    OLLAMA_BASE_URL: str
+    OLLAMA_MODEL: str
+    OLLAMA_TIMEOUT: int
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
