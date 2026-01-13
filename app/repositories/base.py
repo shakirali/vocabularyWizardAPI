@@ -17,10 +17,14 @@ class BaseRepository(Generic[ModelType]):
         return self.db.query(self.model).offset(skip).limit(limit).all()
 
     def create(self, obj: ModelType) -> ModelType:
-        self.db.add(obj)
-        self.db.commit()
-        self.db.refresh(obj)
-        return obj
+        try:
+            self.db.add(obj)
+            self.db.commit()
+            self.db.refresh(obj)
+            return obj
+        except Exception as e:
+            self.db.rollback()
+            raise e
 
     def update(self, obj: ModelType) -> ModelType:
         self.db.commit()

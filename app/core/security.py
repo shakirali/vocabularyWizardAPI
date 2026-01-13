@@ -1,20 +1,46 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from app.core.config import settings
+import hashlib
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def _preprocess_password(password: str) -> bytes:
+    """
+    Preprocess password to handle bcrypt's 72-byte limit.
+    
+    Recommended approach: Pre-hash passwords longer than 72 bytes with SHA-256
+    before passing to bcrypt. This ensures:
+    - Consistent behavior (no truncation)
+    - Better security (full password entropy preserved)
+    - Standard industry practice
+    """
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        # Pre-hash with SHA-256 to get a fixed 64-byte hex string
+        password_bytes = hashlib.sha256(password_bytes).hexdigest().encode('utf-8')
+    return password_bytes
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    password_bytes = _preprocess_password(plain_password)
+    return bcrypt.checkpw(password_bytes, hashed_password.encode('utf-8'))
 
 
 def get_password_hash(password: str) -> str:
-    """Hash a password."""
-    return pwd_context.hash(password)
+    """
+    Hash a password using bcrypt with SHA-256 pre-hashing for long passwords.
+    
+    This implements the recommended approach: passwords longer than 72 bytes
+    are pre-hashed with SHA-256 before bcrypt hashing. This is a widely used
+    pattern recommended by security experts.
+    """
+    password_bytes = _preprocess_password(password)
+    salt = bcrypt.gensalt(rounds=12)
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

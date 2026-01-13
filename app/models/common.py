@@ -28,5 +28,5 @@ else:
             else:
                 return uuid.UUID(value)
     
-    UUIDType = GUID()
+    UUIDType = GUID
 

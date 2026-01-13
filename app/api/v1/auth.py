@@ -4,7 +4,7 @@ from app.database import get_db
 from app.api.deps import oauth2_scheme
 from app.services.auth_service import AuthService
 from app.schemas.user import UserCreate, UserResponse, UserLogin, TokenResponse
-from app.core.exceptions import UnauthorizedError
+from app.core.exceptions import UnauthorizedError, ValidationError
 
 router = APIRouter()
 
@@ -13,8 +13,17 @@ router = APIRouter()
 def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """Register a new user."""
     auth_service = AuthService(db)
-    user = auth_service.register(user_data)
-    return user
+    try:
+        user = auth_service.register(user_data)
+        return user
+    except ValidationError as e:
+        raise e  # ValidationError is already an HTTPException, so just re-raise it
+    except Exception as e:
+        # Catch any other unexpected errors
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred during registration: {str(e)}"
+        )
 
 
 @router.post("/login", response_model=TokenResponse)
