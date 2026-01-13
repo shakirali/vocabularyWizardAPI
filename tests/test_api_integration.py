@@ -53,25 +53,24 @@ class TestAuthFlow:
 class TestVocabularyAPI:
     """Test vocabulary endpoints."""
     
-    def _get_auth_headers(self, client, test_user_data):
-        """Helper method to get authentication headers."""
-        client.post("/api/v1/auth/register", json=test_user_data)
+    def _get_admin_auth_headers(self, client, test_admin_user):
+        """Helper method to get admin authentication headers."""
         login_response = client.post(
             "/api/v1/auth/login",
             json={
-                "username": test_user_data["username"],
-                "password": test_user_data["password"]
+                "username": test_admin_user["username"],
+                "password": test_admin_user["password"]
             }
         )
         token = login_response.json()["access_token"]
         return {"Authorization": f"Bearer {token}"}
     
-    def test_create_and_get_vocabulary(self, client, test_user_data, test_vocabulary_data):
-        """Test creating and retrieving vocabulary items."""
-        # Register and login
-        headers = self._get_auth_headers(client, test_user_data)
+    def test_create_and_get_vocabulary(self, client, test_admin_user, test_vocabulary_data):
+        """Test creating and retrieving vocabulary items as admin."""
+        # Login as admin
+        headers = self._get_admin_auth_headers(client, test_admin_user)
         
-        # Create vocabulary
+        # Create vocabulary as admin
         create_response = client.post(
             "/api/v1/vocabulary",
             json=test_vocabulary_data,
@@ -93,7 +92,7 @@ class TestProgressAPI:
     """Test progress tracking endpoints."""
     
     def _get_auth_headers(self, client, test_user_data):
-        """Helper method to get authentication headers."""
+        """Helper method to get authentication headers for regular user."""
         client.post("/api/v1/auth/register", json=test_user_data)
         login_response = client.post(
             "/api/v1/auth/login",
@@ -105,27 +104,41 @@ class TestProgressAPI:
         token = login_response.json()["access_token"]
         return {"Authorization": f"Bearer {token}"}
     
-    def test_mark_word_as_mastered(self, client, test_user_data, test_vocabulary_data):
+    def _get_admin_auth_headers(self, client, test_admin_user):
+        """Helper method to get admin authentication headers."""
+        login_response = client.post(
+            "/api/v1/auth/login",
+            json={
+                "username": test_admin_user["username"],
+                "password": test_admin_user["password"]
+            }
+        )
+        token = login_response.json()["access_token"]
+        return {"Authorization": f"Bearer {token}"}
+    
+    def test_mark_word_as_mastered(self, client, test_user_data, test_admin_user, test_vocabulary_data):
         """Test marking a word as mastered."""
-        # Setup: Register, login, create vocabulary
-        headers = self._get_auth_headers(client, test_user_data)
-        
-        # Create vocabulary
+        # Create vocabulary as admin
+        admin_headers = self._get_admin_auth_headers(client, test_admin_user)
         vocab_response = client.post(
             "/api/v1/vocabulary",
             json=test_vocabulary_data,
-            headers=headers
+            headers=admin_headers
         )
+        assert vocab_response.status_code == status.HTTP_201_CREATED
         vocab_id = vocab_response.json()["id"]
         
-        # Mark as mastered
+        # Login as regular user
+        user_headers = self._get_auth_headers(client, test_user_data)
+        
+        # Mark as mastered (regular user can do this)
         progress_response = client.post(
             "/api/v1/progress/mastered",
             json={
                 "vocabulary_item_id": vocab_id,
                 "year": "year3"
             },
-            headers=headers
+            headers=user_headers
         )
         assert progress_response.status_code == status.HTTP_201_CREATED
         progress_data = progress_response.json()

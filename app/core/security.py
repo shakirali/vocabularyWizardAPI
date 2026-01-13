@@ -1,4 +1,5 @@
 import hashlib
+import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Optional
 
@@ -6,6 +7,7 @@ import bcrypt
 from jose import JWTError, jwt
 
 from app.core.config import settings
+from app.core.token_blacklist import token_blacklist
 
 
 def _preprocess_password(password: str) -> bytes:
@@ -45,8 +47,19 @@ def get_password_hash(password: str) -> str:
     return hashed.decode("utf-8")
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Create a JWT access token."""
+def create_access_token(
+    data: dict,
+    expires_delta: Optional[timedelta] = None,
+    token_version: int = 0,
+) -> str:
+    """
+    Create a JWT access token.
+    
+    Args:
+        data: Token payload data (must include 'sub' for user ID)
+        expires_delta: Optional custom expiration time
+        token_version: User's current token version for invalidation
+    """
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(UTC) + expires_delta
@@ -55,30 +68,82 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
 
-    to_encode.update({"exp": expire, "type": "access"})
+    to_encode.update({
+        "exp": expire,
+        "type": "access",
+        "jti": str(uuid.uuid4()),  # Unique token ID for blacklisting
+        "tv": token_version,  # Token version for invalidation
+    })
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
     )
     return encoded_jwt
 
 
-def create_refresh_token(data: dict) -> str:
-    """Create a JWT refresh token."""
+def create_refresh_token(data: dict, token_version: int = 0) -> str:
+    """
+    Create a JWT refresh token.
+    
+    Args:
+        data: Token payload data (must include 'sub' for user ID)
+        token_version: User's current token version for invalidation
+    """
     to_encode = data.copy()
     expire = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode.update({"exp": expire, "type": "refresh"})
+    to_encode.update({
+        "exp": expire,
+        "type": "refresh",
+        "jti": str(uuid.uuid4()),  # Unique token ID for blacklisting
+        "tv": token_version,  # Token version for invalidation
+    })
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
     )
     return encoded_jwt
 
 
-def decode_token(token: str) -> Optional[dict]:
-    """Decode and verify a JWT token."""
+def decode_token(token: str, check_blacklist: bool = True) -> Optional[dict]:
+    """
+    Decode and verify a JWT token.
+    
+    Args:
+        token: The JWT token to decode
+        check_blacklist: Whether to check if token is blacklisted
+        
+    Returns:
+        Token payload if valid, None otherwise
+    """
     try:
+        # Check blacklist first (before expensive decode)
+        if check_blacklist and token_blacklist.is_blacklisted(token):
+            return None
+            
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
         return payload
     except JWTError:
         return None
+
+
+def blacklist_token(token: str) -> None:
+    """
+    Add a token to the blacklist.
+    
+    Args:
+        token: The JWT token to blacklist
+    """
+    # Try to get expiry from token for cleanup purposes
+    try:
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+            options={"verify_exp": False},  # Allow expired tokens to be blacklisted
+        )
+        exp = payload.get("exp")
+        expires_at = datetime.fromtimestamp(exp, tz=UTC) if exp else None
+    except JWTError:
+        expires_at = None
+    
+    token_blacklist.add(token, expires_at)

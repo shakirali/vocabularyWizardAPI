@@ -1,7 +1,13 @@
+import logging
 import warnings
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 
 from app.api.v1 import (auth, flashcards, progress, quiz, sentences,
                         vocabulary, years)
@@ -13,17 +19,42 @@ from app.models import quiz as quiz_model  # noqa: F401
 from app.models import user  # noqa: F401
 from app.models import vocabulary as vocab_model  # noqa: F401
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
 # Suppress deprecation warning from python-jose library (third-party issue)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="jose")
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
+# Rate limiter configuration
+limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
+
 app = FastAPI(
     title="Vocabulary Wizard API",
     description="FastAPI backend for Vocabulary iOS application",
     version="1.0.0",
 )
+
+# Add rate limiter to app state
+app.state.limiter = limiter
+
+# Add rate limiting middleware
+app.add_middleware(SlowAPIMiddleware)
+
+# Custom rate limit exceeded handler
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    logger.warning(f"Rate limit exceeded for {get_remote_address(request)}")
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Too many requests. Please try again later."},
+    )
 
 # CORS middleware
 app.add_middleware(
@@ -79,6 +110,7 @@ def health_check_db():
         db.close()
         return {"status": "healthy", "database": "connected"}
     except Exception as e:
+        logger.error(f"Database health check failed: {str(e)}")
         return {"status": "unhealthy", "database": "disconnected", "error": str(e)}
 
 

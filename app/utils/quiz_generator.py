@@ -1,9 +1,13 @@
+import logging
 import random
 import uuid
 from typing import List, Optional
 
 from app.models.quiz import QuizQuestion
 from app.models.vocabulary import VocabularyItem
+from app.utils.ollama_service import ollama_service
+
+logger = logging.getLogger(__name__)
 
 
 def generate_quiz_questions(
@@ -50,30 +54,64 @@ def generate_quiz_questions(
 
 
 def generate_sentence_questions(
-    vocabulary_items: List[VocabularyItem], question_count: Optional[int] = None
+    vocabulary_items: List[VocabularyItem],
+    question_count: Optional[int] = None,
+    use_ollama: bool = True,
 ) -> List[dict]:
     """
     Generate sentence fill-in-the-blank questions.
-    Returns list of dicts with question data (not SQLAlchemy models).
-    """
-    # Filter items with example sentences
-    items_with_sentences = [item for item in vocabulary_items if item.example_sentences]
+    Uses Ollama to generate sentences if example sentences are not available.
 
+    Args:
+        vocabulary_items: List of vocabulary items to generate questions from
+        question_count: Optional limit on number of questions to generate
+        use_ollama: If True, use Ollama to generate sentences when example_sentences are missing
+
+    Returns:
+        List of dicts with question data (not SQLAlchemy models).
+    """
+    # Select items to use for questions
+    selected_items = vocabulary_items
     if question_count:
-        items_with_sentences = random.sample(
-            items_with_sentences, min(question_count, len(items_with_sentences))
+        selected_items = random.sample(
+            vocabulary_items, min(question_count, len(vocabulary_items))
         )
 
     questions = []
     all_words = [item.word for item in vocabulary_items]
 
-    for item in items_with_sentences:
-        # Pick a random example sentence
-        sentence = random.choice(item.example_sentences)
+    for item in selected_items:
+        display_sentence = None
+        sentence_template = None
 
-        # Replace the word with placeholder
-        sentence_template = sentence.replace(item.word, "{word}")
-        display_sentence = sentence.replace(item.word, "_____")
+        # Try to use existing example sentences first
+        if item.example_sentences:
+            sentence = random.choice(item.example_sentences)
+            # Replace the word with placeholder
+            sentence_template = sentence.replace(item.word, "{word}")
+            display_sentence = sentence.replace(item.word, "_____")
+            logger.debug(f"Using existing example sentence for word: {item.word}")
+        elif use_ollama:
+            # Generate sentence using Ollama
+            logger.info(f"Generating sentence using Ollama for word: {item.word}")
+            generated_sentence = ollama_service.generate_sentence_with_blank(
+                word=item.word, meaning=item.meaning
+            )
+
+            if generated_sentence:
+                display_sentence = generated_sentence
+                # Create template with {word} placeholder for potential future use
+                sentence_template = generated_sentence.replace("_____", "{word}")
+                logger.info(f"Successfully generated sentence for word: {item.word}")
+            else:
+                logger.warning(
+                    f"Failed to generate sentence for word: {item.word}, skipping..."
+                )
+                continue
+        else:
+            # Skip items without example sentences if Ollama is disabled
+            logger.debug(f"Skipping word '{item.word}' - no example sentences available")
+            continue
 
         # Create options: correct word + 3 distractors
         options = [item.word]

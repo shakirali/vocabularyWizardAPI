@@ -1,9 +1,10 @@
+import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_active_user
+from app.api.deps import get_current_active_user, get_current_admin_user
 from app.database import get_db
 from app.models.user import User
 from app.schemas.common import PaginatedResponse
@@ -18,9 +19,9 @@ router = APIRouter()
 @router.get("", response_model=PaginatedResponse[VocabularyItemResponse])
 def get_vocabulary(
     year: Optional[str] = None,
-    search: Optional[str] = None,
-    skip: int = 0,
-    limit: int = 100,
+    search: Optional[str] = Query(None, max_length=100),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -39,8 +40,6 @@ def get_vocabulary_item(
     current_user: User = Depends(get_current_active_user),
 ):
     """Get a specific vocabulary item by ID."""
-    import uuid
-
     vocab_service = VocabularyService(db)
     return vocab_service.get_by_id(uuid.UUID(vocabulary_id))
 
@@ -51,9 +50,9 @@ def get_vocabulary_item(
 def create_vocabulary_item(
     item_data: VocabularyItemCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_admin_user),
 ):
-    """Create a new vocabulary item (admin only - add admin check in production)."""
+    """Create a new vocabulary item. Requires admin privileges."""
     vocab_service = VocabularyService(db)
     return vocab_service.create(item_data)
 
@@ -63,11 +62,9 @@ def update_vocabulary_item(
     vocabulary_id: str,
     item_data: VocabularyItemUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_admin_user),
 ):
-    """Update a vocabulary item (admin only - add admin check in production)."""
-    import uuid
-
+    """Update a vocabulary item. Requires admin privileges."""
     vocab_service = VocabularyService(db)
     return vocab_service.update(uuid.UUID(vocabulary_id), item_data)
 
@@ -76,10 +73,8 @@ def update_vocabulary_item(
 def delete_vocabulary_item(
     vocabulary_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_admin_user),
 ):
-    """Delete a vocabulary item (admin only - add admin check in production)."""
-    import uuid
-
+    """Delete a vocabulary item. Requires admin privileges."""
     vocab_service = VocabularyService(db)
     vocab_service.delete(uuid.UUID(vocabulary_id))

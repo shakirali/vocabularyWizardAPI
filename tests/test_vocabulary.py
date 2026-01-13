@@ -8,9 +8,9 @@ def test_get_vocabulary_requires_auth(client):
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_create_and_get_vocabulary(client, test_user_data, test_vocabulary_data):
-    """Test creating and retrieving vocabulary items."""
-    # Register and login
+def test_create_vocabulary_requires_admin(client, test_user_data, test_vocabulary_data):
+    """Test that creating vocabulary items requires admin privileges."""
+    # Register and login as regular user
     client.post("/api/v1/auth/register", json=test_user_data)
     login_response = client.post(
         "/api/v1/auth/login",
@@ -22,7 +22,29 @@ def test_create_and_get_vocabulary(client, test_user_data, test_vocabulary_data)
     token = login_response.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     
-    # Create vocabulary item
+    # Try to create vocabulary item as regular user - should fail
+    create_response = client.post(
+        "/api/v1/vocabulary",
+        json=test_vocabulary_data,
+        headers=headers
+    )
+    assert create_response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_create_and_get_vocabulary(client, test_admin_user, test_vocabulary_data):
+    """Test creating and retrieving vocabulary items as admin."""
+    # Login as admin user
+    login_response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "username": test_admin_user["username"],
+            "password": test_admin_user["password"]
+        }
+    )
+    token = login_response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # Create vocabulary item as admin
     create_response = client.post(
         "/api/v1/vocabulary",
         json=test_vocabulary_data,

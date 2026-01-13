@@ -3,7 +3,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.database import Base, get_db
-from app.main import app
+from app.main import app, limiter
+from app.api.v1.auth import limiter as auth_limiter
 import uuid
 
 # Test database (SQLite in memory)
@@ -29,7 +30,7 @@ def db_session():
 
 @pytest.fixture(scope="function")
 def client(db_session):
-    """Create a test client with database override."""
+    """Create a test client with database override and disabled rate limiting."""
     def override_get_db():
         try:
             yield db_session
@@ -37,19 +38,55 @@ def client(db_session):
             pass
     
     app.dependency_overrides[get_db] = override_get_db
+    
+    # Disable rate limiting for tests
+    limiter.enabled = False
+    auth_limiter.enabled = False
+    
     with TestClient(app) as test_client:
         yield test_client
+    
+    # Re-enable rate limiting after tests
+    limiter.enabled = True
+    auth_limiter.enabled = True
     app.dependency_overrides.clear()
 
 
 @pytest.fixture
 def test_user_data():
-    """Test user data."""
+    """Test user data with strong password."""
     return {
         "username": "testuser",
         "email": "test@example.com",
-        "password": "testpassword123",
+        "password": "TestPassword123",  # Meets requirements: uppercase, lowercase, digit
         "full_name": "Test User"
+    }
+
+
+@pytest.fixture
+def test_admin_user(db_session):
+    """Create an admin user directly in the database for testing admin-only endpoints."""
+    from app.models.user import User
+    from app.core.security import get_password_hash
+    
+    admin = User(
+        id=uuid.uuid4(),
+        username="adminuser",
+        email="admin@example.com",
+        password_hash=get_password_hash("AdminPassword123"),
+        full_name="Admin User",
+        is_admin=True,
+        is_active=True,
+        token_version=0,
+    )
+    db_session.add(admin)
+    db_session.commit()
+    db_session.refresh(admin)
+    return {
+        "username": "adminuser",
+        "email": "admin@example.com",
+        "password": "AdminPassword123",
+        "user": admin,
     }
 
 
