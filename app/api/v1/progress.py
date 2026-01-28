@@ -55,12 +55,11 @@ def mark_mastered(
     """Mark a word as mastered."""
     progress_service = ProgressService(db)
     progress = progress_service.mark_mastered(current_user.id, request)
-    # Convert model to response schema, mapping year_group to year
     return UserProgressResponse(
         id=progress.id,
         user_id=progress.user_id,
         vocabulary_item_id=progress.vocabulary_item_id,
-        year=progress.year_group,  # Map year_group to year
+        year=progress.year_group,
         is_mastered=progress.is_mastered,
         mastered_at=progress.mastered_at,
     )

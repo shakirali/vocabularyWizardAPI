@@ -10,7 +10,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
 from app.api.v1 import (auth, flashcards, progress, quiz, sentences,
-                        vocabulary, years)
+                        vocabulary)
 from app.core.config import settings
 from app.database import Base, engine
 # Import models to ensure they're registered with SQLAlchemy
@@ -68,9 +68,6 @@ app.add_middleware(
 # Include routers
 app.include_router(
     auth.router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=["Authentication"]
-)
-app.include_router(
-    years.router, prefix=f"{settings.API_V1_PREFIX}/years", tags=["Year Groups"]
 )
 app.include_router(
     vocabulary.router,

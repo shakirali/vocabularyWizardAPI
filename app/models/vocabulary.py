@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import JSON, Column, DateTime, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Column, DateTime, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
@@ -22,44 +22,19 @@ else:
     JSONType = JSON
 
 
-class YearGroup:
-    YEAR3 = "year3"
-    YEAR4 = "year4"
-    YEAR5 = "year5"
-    YEAR6 = "year6"
-
-    @classmethod
-    def get_display_name(cls, year: str) -> str:
-        mapping = {
-            cls.YEAR3: "Year 3",
-            cls.YEAR4: "Year 4",
-            cls.YEAR5: "Year 5",
-            cls.YEAR6: "Year 6",
-        }
-        return mapping.get(year, year)
-
-    @classmethod
-    def get_short_code(cls, year: str) -> str:
-        mapping = {
-            cls.YEAR3: "Y3",
-            cls.YEAR4: "Y4",
-            cls.YEAR5: "Y5",
-            cls.YEAR6: "Y6",
-        }
-        return mapping.get(year, year)
-
-    @classmethod
-    def all(cls):
-        return [cls.YEAR3, cls.YEAR4, cls.YEAR5, cls.YEAR6]
-
-
 class VocabularyItem(Base):
+    """
+    Vocabulary item representing a unique word with its definition.
+    
+    Words are globally unique - the same word should not appear multiple times.
+    Level associations are managed through the VocabularyLevel relationship table.
+    """
     __tablename__ = "vocabulary_items"
 
     id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
-    year = Column(String(10), nullable=False, index=True)
-    word = Column(String(255), nullable=False)
+    word = Column(String(255), nullable=False, unique=True, index=True)  # Now globally unique
     meaning = Column(Text, nullable=False)
+    synonyms = Column(JSONType, default=list)
     antonyms = Column(JSONType, default=list)
     example_sentences = Column(JSONType, default=list)
     created_at = Column(DateTime, default=utc_now, nullable=False)
@@ -69,5 +44,19 @@ class VocabularyItem(Base):
     progress = relationship(
         "UserProgress", back_populates="vocabulary_item", cascade="all, delete-orphan"
     )
+    quiz_sentences = relationship(
+        "QuizSentence", back_populates="vocabulary_item", cascade="all, delete-orphan"
+    )
+    vocabulary_levels = relationship(
+        "VocabularyLevel", back_populates="vocabulary_item", cascade="all, delete-orphan"
+    )
 
-    __table_args__ = (UniqueConstraint("year", "word", name="uq_vocabulary_year_word"),)
+    @property
+    def levels(self):
+        """Get all levels this vocabulary item belongs to."""
+        return [vl.level for vl in self.vocabulary_levels]
+
+    @property
+    def level_numbers(self):
+        """Get list of level numbers (1, 2, 3, 4) this vocabulary item belongs to."""
+        return sorted([vl.level.level for vl in self.vocabulary_levels])

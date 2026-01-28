@@ -21,6 +21,12 @@ def db_session():
     """Create a fresh database for each test."""
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
+    
+    # Ensure levels exist
+    from app.repositories.level_repository import LevelRepository
+    level_repo = LevelRepository(db)
+    level_repo.create_default_levels()
+    
     try:
         yield db
     finally:
@@ -92,12 +98,12 @@ def test_admin_user(db_session):
 
 @pytest.fixture
 def test_vocabulary_data():
-    """Test vocabulary item data."""
+    """Test vocabulary item data with levels."""
     return {
-        "year": "year3",
         "word": "example",
         "meaning": "a thing characteristic of its kind",
+        "synonyms": ["instance", "sample"],
         "antonyms": ["counterexample"],
-        "example_sentences": ["This is an example sentence."]
+        "example_sentences": ["This is an example sentence."],
+        "levels": [1]  # Level 1 (previously year3)
     }
-

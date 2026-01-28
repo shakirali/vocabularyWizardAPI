@@ -5,7 +5,7 @@ FastAPI backend for the Vocabulary iOS application. This API provides RESTful en
 ## Features
 
 - **User Authentication**: JWT-based authentication with refresh tokens
-- **Vocabulary Management**: CRUD operations for vocabulary items organized by year groups
+- **Vocabulary Management**: CRUD operations for vocabulary items organized by levels (1-4)
 - **Progress Tracking**: Track user progress, mastered words, and practice sessions
 - **Quiz Generation**: Generate quizzes from mastered vocabulary words
 - **Sentence Fill-in-the-Blank**: Generate sentence completion questions
@@ -52,6 +52,7 @@ backend/
 │   │   ├── __init__.py
 │   │   ├── user.py             # User SQLAlchemy model
 │   │   ├── vocabulary.py       # VocabularyItem model
+│   │   ├── level.py             # Level and VocabularyLevel models
 │   │   ├── progress.py         # UserProgress model
 │   │   └── quiz.py             # QuizQuestion, SentenceQuestion models
 │   │
@@ -59,6 +60,7 @@ backend/
 │   │   ├── __init__.py
 │   │   ├── user.py             # User Pydantic schemas
 │   │   ├── vocabulary.py       # VocabularyItem schemas
+│   │   ├── level.py             # Level schemas
 │   │   ├── progress.py         # Progress schemas
 │   │   ├── quiz.py             # Quiz schemas
 │   │   └── common.py           # Common schemas (pagination, etc.)
@@ -75,6 +77,7 @@ backend/
 │   │   ├── base.py             # Base repository pattern
 │   │   ├── user_repository.py
 │   │   ├── vocabulary_repository.py
+│   │   ├── level_repository.py  # Level and VocabularyLevel repositories
 │   │   └── progress_repository.py
 │   │
 │   └── utils/
@@ -85,6 +88,18 @@ backend/
 │   ├── __init__.py
 │   ├── conftest.py             # Pytest fixtures
 │   └── ...
+│
+├── data/
+│   ├── vocabulary.csv           # Unified vocabulary (unique words)
+│   ├── vocabulary_levels.csv   # Word-level associations
+│   ├── quiz_sentences_level1.csv
+│   ├── quiz_sentences_level2.csv
+│   ├── quiz_sentences_level3.csv
+│   └── quiz_sentences_level4.csv
+│
+├── scripts/
+│   ├── import_vocabulary_levels.py
+│   └── import_quiz_sentences_levels.py
 │
 ├── requirements.txt
 ├── .env.example
@@ -129,19 +144,36 @@ cp .env.example .env
 
 6. Initialize the database:
 ```bash
-# The database tables will be created automatically on first run
-# Or use Alembic for migrations:
-# alembic init alembic
-# alembic revision --autogenerate -m "Initial migration"
-# alembic upgrade head
+python init_db.py
 ```
 
-7. Run the application:
+7. Import vocabulary data:
+```bash
+# Import vocabulary items and level associations
+python scripts/import_vocabulary_levels.py
+
+# Import quiz sentences
+python scripts/import_quiz_sentences_levels.py
+```
+
+8. Run the application:
 ```bash
 uvicorn app.main:app --reload
 ```
 
 The API will be available at `http://localhost:8000`
+
+## Data Import
+
+Import vocabulary and quiz sentences from CSV files:
+
+```bash
+# Import vocabulary and level associations
+python scripts/import_vocabulary_levels.py
+
+# Import quiz sentences for all levels
+python scripts/import_quiz_sentences_levels.py
+```
 
 ## Docker Setup
 
@@ -173,11 +205,11 @@ Once the server is running, you can access:
 - `POST /api/v1/auth/refresh` - Refresh access token
 - `POST /api/v1/auth/logout` - Logout (client-side token removal)
 
-### Year Groups
-- `GET /api/v1/years` - Get all available year groups
+### Levels
+- `GET /api/v1/levels` - Get all available levels (1-4)
 
 ### Vocabulary
-- `GET /api/v1/vocabulary` - Get vocabulary items (with filters)
+- `GET /api/v1/vocabulary` - Get vocabulary items (with filters by level)
 - `GET /api/v1/vocabulary/{id}` - Get specific vocabulary item
 - `POST /api/v1/vocabulary` - Create vocabulary item (admin)
 - `PUT /api/v1/vocabulary/{id}` - Update vocabulary item (admin)
@@ -185,7 +217,7 @@ Once the server is running, you can access:
 
 ### Progress
 - `GET /api/v1/progress` - Get user's progress summary
-- `GET /api/v1/progress/mastered` - Get mastered word IDs for a year
+- `GET /api/v1/progress/mastered` - Get mastered word IDs for a level
 - `POST /api/v1/progress/mastered` - Mark word as mastered
 - `DELETE /api/v1/progress/mastered/{id}` - Unmark word as mastered
 - `POST /api/v1/progress/practice` - Record practice session
@@ -199,7 +231,23 @@ Once the server is running, you can access:
 - `POST /api/v1/sentences/submit` - Submit sentence answers
 
 ### Flashcards
-- `GET /api/v1/flashcards` - Get flashcards for a year (paginated)
+- `GET /api/v1/flashcards` - Get flashcards for a level (paginated)
+
+## Level System
+
+The vocabulary is organized into 4 levels:
+
+| Level | Description | Age Range | Previously |
+|-------|-------------|-----------|------------|
+| Level 1 | Beginner | 7-8 | Year 3 |
+| Level 2 | Elementary | 8-9 | Year 4 |
+| Level 3 | Intermediate | 9-10 | Year 5 |
+| Level 4 | Advanced | 10-11 | Year 6 |
+
+**Key Features:**
+- Words are globally unique (no duplicates across levels)
+- A word can be associated with multiple levels if appropriate
+- Level associations are managed through the `vocabulary_levels` table
 
 ## Testing
 
@@ -254,4 +302,3 @@ mypy app/
 ## Contributing
 
 [Contributing guidelines]
-

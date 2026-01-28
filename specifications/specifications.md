@@ -1,14 +1,8 @@
----
-name: FastAPI Backend Requirements
-overview: Create a comprehensive requirements.md file for a FastAPI backend that mirrors the iOS app's functionality, including vocabulary management, quiz generation, progress tracking, and user authentication.
-todos: []
----
-
-# FastAPI Backend Requirements Document
+# Vocabulary Wizard API - Specifications Document
 
 ## Overview
 
-This document specifies the requirements for building a FastAPI backend to support the Vocabulary iOS application. The backend will provide RESTful APIs for vocabulary management, quiz generation, progress tracking, and user authentication.
+This document specifies the requirements for building a FastAPI backend to support the Vocabulary Wizard iOS application. The backend provides RESTful APIs for vocabulary management, quiz generation, progress tracking, and user authentication for school children preparing for eleven plus and SAT exams in England (Levels 1-4, previously Years 3-6).
 
 ## 1. Core Data Models
 
@@ -16,20 +10,50 @@ This document specifies the requirements for building a FastAPI backend to suppo
 
 - **Fields:**
   - `id`: UUID (primary key)
-  - `year`: YearGroup enum (Year 3, Year 4, Year 5, Year 6)
-  - `word`: String (required, unique per year)
+  - `word`: String (required, globally unique)
   - `meaning`: String (required)
-  - `antonyms`: List[String]
-  - `exampleSentences`: List[String]
+  - `synonyms`: List[String] (words with similar meanings)
+  - `antonyms`: List[String] (words with opposite meanings)
+  - `example_sentences`: List[String] (sentences demonstrating word usage)
   - `created_at`: DateTime
   - `updated_at`: DateTime
 
-### 1.2 YearGroup
+- **Key Changes:**
+  - Words are now globally unique (no duplicates across levels)
+  - Level associations are managed through the `VocabularyLevel` relationship table
+  - Removed `year` field (replaced with level associations)
 
-- Enum values: `year3`, `year4`, `year5`, `year6`
-- Each has: `display_name`, `short_code` (Y3, Y4, Y5, Y6)
+### 1.2 Level
 
-### 1.3 QuizQuestion
+- **Fields:**
+  - `id`: UUID (primary key)
+  - `level`: Integer (1, 2, 3, 4) - unique
+  - `name`: String (e.g., "Level 1")
+  - `description`: String (optional, e.g., "Beginner (Age 7-8)")
+  - `created_at`: DateTime
+
+- **Level Mapping:**
+  - Level 1: Ages 7-8 (Beginner) - Previously Year 3
+  - Level 2: Ages 8-9 (Elementary) - Previously Year 4
+  - Level 3: Ages 9-10 (Intermediate) - Previously Year 5
+  - Level 4: Ages 10-11 (Advanced) - Previously Year 6
+
+### 1.3 VocabularyLevel
+
+- **Fields:**
+  - `id`: UUID (primary key)
+  - `vocabulary_item_id`: UUID (foreign key to VocabularyItem)
+  - `level_id`: UUID (foreign key to Level)
+  - `created_at`: DateTime
+
+- **Purpose:** Association table linking vocabulary items to levels. Allows:
+  - A word to be associated with multiple levels (if appropriate)
+  - Querying vocabulary by level
+  - Maintaining unique words in the vocabulary table
+
+- **Unique Constraint:** (vocabulary_item_id, level_id)
+
+### 1.4 QuizQuestion
 
 - **Fields:**
   - `id`: UUID
@@ -40,17 +64,32 @@ This document specifies the requirements for building a FastAPI backend to suppo
   - `type`: Enum (currently only "meaning")
   - `created_at`: DateTime
 
-### 1.4 SentenceQuestion
+### 1.5 QuizSentence
+
+- **Fields:**
+  - `id`: UUID (primary key)
+  - `vocabulary_item_id`: UUID (foreign key to VocabularyItem)
+  - `sentence`: String (sentence with _____ blank placeholder)
+  - `created_at`: DateTime
+
+- **Purpose:** Pre-generated fill-in-the-blank sentences for sentence quizzes. Each vocabulary word has multiple associated quiz sentences.
+
+- **Example:**
+  - Word: "peaceful"
+  - Sentence: "The countryside is beautiful and _____."
+
+### 1.6 SentenceQuestion (Runtime Model)
 
 - **Fields:**
   - `id`: UUID
   - `sentence_template`: String (sentence with {word} placeholder)
+  - `display_sentence`: String (sentence with _____ for display)
   - `correct_word`: String
   - `options`: List[String] (multiple choice options)
   - `vocabulary_item_id`: UUID (foreign key)
   - `created_at`: DateTime
 
-### 1.5 User
+### 1.7 User
 
 - **Fields:**
   - `id`: UUID (primary key)
@@ -62,13 +101,13 @@ This document specifies the requirements for building a FastAPI backend to suppo
   - `updated_at`: DateTime
   - `is_active`: Boolean (default: True)
 
-### 1.6 UserProgress
+### 1.8 UserProgress
 
 - **Fields:**
   - `id`: UUID (primary key)
   - `user_id`: UUID (foreign key)
   - `vocabulary_item_id`: UUID (foreign key)
-  - `year_group`: YearGroup enum
+  - `year_group`: String (deprecated, kept for backward compatibility)
   - `is_mastered`: Boolean (default: False)
   - `mastered_at`: DateTime (nullable)
   - `times_practiced`: Integer (default: 0)
@@ -76,6 +115,8 @@ This document specifies the requirements for building a FastAPI backend to suppo
   - `created_at`: DateTime
   - `updated_at`: DateTime
   - **Unique constraint:** (user_id, vocabulary_item_id)
+
+- **Note:** The `year_group` field is kept for backward compatibility but should be replaced with level-based queries in future versions.
 
 ## 2. API Endpoints
 
@@ -144,23 +185,24 @@ This document specifies the requirements for building a FastAPI backend to suppo
 - **Headers:** Authorization: Bearer {token}
 - **Response:** 200 OK
 
-### 2.2 Year Group Endpoints
+### 2.2 Level Endpoints
 
-#### GET `/api/v1/years`
+#### GET `/api/v1/levels`
 
-- **Description:** Get all available year groups
+- **Description:** Get all available levels
 - **Authentication:** Optional (public endpoint)
 - **Response:** 200 OK
   ```json
   [
     {
-      "value": "year3",
-      "display_name": "Year 3",
-      "short_code": "Y3"
+      "id": "uuid",
+      "level": 1,
+      "name": "Level 1",
+      "description": "Beginner (Age 7-8)",
+      "created_at": "datetime"
     }
   ]
   ```
-
 
 ### 2.3 Vocabulary Item Endpoints
 
@@ -169,7 +211,7 @@ This document specifies the requirements for building a FastAPI backend to suppo
 - **Description:** Get vocabulary items with optional filters
 - **Authentication:** Required
 - **Query Parameters:**
-  - `year`: YearGroup (optional, filter by year)
+  - `level`: Integer (optional, filter by level: 1, 2, 3, or 4)
   - `skip`: Integer (default: 0, pagination)
   - `limit`: Integer (default: 100, pagination)
   - `search`: String (optional, search word/meaning)
@@ -179,11 +221,14 @@ This document specifies the requirements for building a FastAPI backend to suppo
     "items": [
       {
         "id": "uuid",
-        "year": "year3",
         "word": "string",
         "meaning": "string",
+        "synonyms": ["string"],
         "antonyms": ["string"],
-        "example_sentences": ["string"]
+        "example_sentences": ["string"],
+        "levels": [1, 2],
+        "created_at": "datetime",
+        "updated_at": "datetime"
       }
     ],
     "total": 100,
@@ -197,20 +242,30 @@ This document specifies the requirements for building a FastAPI backend to suppo
 
 - **Description:** Get a specific vocabulary item by ID
 - **Authentication:** Required
-- **Response:** 200 OK (single VocabularyItem object)
+- **Response:** 200 OK (single VocabularyItem object with levels array)
 
 #### POST `/api/v1/vocabulary`
 
 - **Description:** Create a new vocabulary item (admin only)
 - **Authentication:** Required (admin role)
-- **Request Body:** VocabularyItem (without id, created_at, updated_at)
+- **Request Body:**
+  ```json
+  {
+    "word": "string",
+    "meaning": "string",
+    "synonyms": ["string"],
+    "antonyms": ["string"],
+    "example_sentences": ["string"],
+    "levels": [1, 2]
+  }
+  ```
 - **Response:** 201 Created
 
 #### PUT `/api/v1/vocabulary/{vocabulary_id}`
 
 - **Description:** Update a vocabulary item (admin only)
 - **Authentication:** Required (admin role)
-- **Request Body:** VocabularyItem (partial update allowed)
+- **Request Body:** VocabularyItem (partial update allowed, including levels)
 - **Response:** 200 OK
 
 #### DELETE `/api/v1/vocabulary/{vocabulary_id}`
@@ -219,30 +274,80 @@ This document specifies the requirements for building a FastAPI backend to suppo
 - **Authentication:** Required (admin role)
 - **Response:** 204 No Content
 
-### 2.4 Progress Endpoints
+### 2.4 Quiz Sentence Endpoints
+
+#### GET `/api/v1/vocabulary/{vocabulary_id}/quiz-sentences`
+
+- **Description:** Get all quiz sentences for a specific vocabulary item
+- **Authentication:** Required
+- **Response:** 200 OK
+  ```json
+  {
+    "vocabulary_item_id": "uuid",
+    "word": "peaceful",
+    "sentences": [
+      {
+        "id": "uuid",
+        "sentence": "The countryside is beautiful and _____.",
+        "created_at": "datetime"
+      }
+    ],
+    "total": 10
+  }
+  ```
+
+
+#### GET `/api/v1/quiz-sentences`
+
+- **Description:** Get quiz sentences with optional filters
+- **Authentication:** Required
+- **Query Parameters:**
+  - `level`: Integer (optional, filter by level: 1, 2, 3, or 4)
+  - `skip`: Integer (default: 0, pagination)
+  - `limit`: Integer (default: 100, pagination)
+- **Response:** 200 OK
+  ```json
+  {
+    "items": [
+      {
+        "id": "uuid",
+        "vocabulary_item_id": "uuid",
+        "word": "string",
+        "sentence": "string",
+        "created_at": "datetime"
+      }
+    ],
+    "total": 2000,
+    "skip": 0,
+    "limit": 100
+  }
+  ```
+
+
+### 2.5 Progress Endpoints
 
 #### GET `/api/v1/progress`
 
 - **Description:** Get user's progress summary
 - **Authentication:** Required
 - **Query Parameters:**
-  - `year`: YearGroup (optional, filter by year)
+  - `level`: Integer (optional, filter by level: 1, 2, 3, or 4)
 - **Response:** 200 OK
   ```json
   {
     "user_id": "uuid",
-    "year_progress": [
+    "level_progress": [
       {
-        "year": "year3",
-        "total_words": 50,
-        "mastered_words": 15,
-        "mastered_percentage": 30.0
+        "level": 1,
+        "total_words": 246,
+        "mastered_words": 50,
+        "mastered_percentage": 20.3
       }
     ],
     "overall_progress": {
-      "total_words": 200,
-      "mastered_words": 45,
-      "mastered_percentage": 22.5
+      "total_words": 801,
+      "mastered_words": 150,
+      "mastered_percentage": 18.7
     }
   }
   ```
@@ -250,14 +355,14 @@ This document specifies the requirements for building a FastAPI backend to suppo
 
 #### GET `/api/v1/progress/mastered`
 
-- **Description:** Get list of mastered word IDs for a year
+- **Description:** Get list of mastered word IDs for a level
 - **Authentication:** Required
 - **Query Parameters:**
-  - `year`: YearGroup (required)
+  - `level`: Integer (required: 1, 2, 3, or 4)
 - **Response:** 200 OK
   ```json
   {
-    "year": "year3",
+    "level": 1,
     "mastered_word_ids": ["uuid1", "uuid2", ...]
   }
   ```
@@ -271,7 +376,7 @@ This document specifies the requirements for building a FastAPI backend to suppo
   ```json
   {
     "vocabulary_item_id": "uuid",
-    "year": "year3"
+    "level": 1
   }
   ```
 
@@ -281,7 +386,7 @@ This document specifies the requirements for building a FastAPI backend to suppo
     "id": "uuid",
     "user_id": "uuid",
     "vocabulary_item_id": "uuid",
-    "year": "year3",
+    "year_group": "year3",
     "is_mastered": true,
     "mastered_at": "datetime"
   }
@@ -293,7 +398,7 @@ This document specifies the requirements for building a FastAPI backend to suppo
 - **Description:** Unmark a word as mastered
 - **Authentication:** Required
 - **Query Parameters:**
-  - `year`: YearGroup (required)
+  - `level`: Integer (required: 1, 2, 3, or 4)
 - **Response:** 204 No Content
 
 #### POST `/api/v1/progress/practice`
@@ -304,14 +409,14 @@ This document specifies the requirements for building a FastAPI backend to suppo
   ```json
   {
     "vocabulary_item_id": "uuid",
-    "year": "year3",
+    "level": 1,
     "correct": true
   }
   ```
 
 - **Response:** 200 OK
 
-### 2.5 Quiz Endpoints
+### 2.6 Quiz Endpoints
 
 #### POST `/api/v1/quiz/generate`
 
@@ -320,8 +425,8 @@ This document specifies the requirements for building a FastAPI backend to suppo
 - **Request Body:**
   ```json
   {
-    "year": "year3",
-    "question_count": 10 (optional, default: all mastered words)
+    "level": 1,
+    "question_count": 10
   }
   ```
 
@@ -329,7 +434,7 @@ This document specifies the requirements for building a FastAPI backend to suppo
   ```json
   {
     "quiz_id": "uuid",
-    "year": "year3",
+    "level": 1,
     "questions": [
       {
         "id": "uuid",
@@ -381,17 +486,17 @@ This document specifies the requirements for building a FastAPI backend to suppo
   ```
 
 
-### 2.6 Sentence Fill Endpoints
+### 2.7 Sentence Fill Endpoints
 
 #### POST `/api/v1/sentences/generate`
 
-- **Description:** Generate sentence fill-in-the-blank questions
+- **Description:** Generate sentence fill-in-the-blank questions from pre-stored quiz sentences
 - **Authentication:** Required
 - **Request Body:**
   ```json
   {
-    "year": "year3",
-    "question_count": 10 (optional, default: all available)
+    "level": 1,
+    "question_count": 10
   }
   ```
 
@@ -399,7 +504,7 @@ This document specifies the requirements for building a FastAPI backend to suppo
   ```json
   {
     "session_id": "uuid",
-    "year": "year3",
+    "level": 1,
     "questions": [
       {
         "id": "uuid",
@@ -433,14 +538,14 @@ This document specifies the requirements for building a FastAPI backend to suppo
 
 - **Response:** 200 OK (similar structure to quiz submit)
 
-### 2.7 Flashcard Endpoints
+### 2.8 Flashcard Endpoints
 
 #### GET `/api/v1/flashcards`
 
-- **Description:** Get flashcards for a year (paginated)
+- **Description:** Get flashcards for a level (paginated)
 - **Authentication:** Required
 - **Query Parameters:**
-  - `year`: YearGroup (required)
+  - `level`: Integer (required: 1, 2, 3, or 4)
   - `skip`: Integer (default: 0)
   - `limit`: Integer (default: 5, batch size)
 - **Response:** 200 OK
@@ -449,14 +554,15 @@ This document specifies the requirements for building a FastAPI backend to suppo
     "cards": [
       {
         "id": "uuid",
-        "year": "year3",
         "word": "string",
         "meaning": "string",
+        "synonyms": ["string"],
         "antonyms": ["string"],
-        "example_sentences": ["string"]
+        "example_sentences": ["string"],
+        "levels": [1]
       }
     ],
-    "total": 50,
+    "total": 246,
     "skip": 0,
     "limit": 5,
     "has_more": true
@@ -469,11 +575,10 @@ This document specifies the requirements for building a FastAPI backend to suppo
 ### 3.1 Project Structure
 
 ```
-backend/
+vocabularyWizardAPI/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py                 # FastAPI app initialization
-│   ├── config.py               # Configuration management
 │   ├── database.py             # Database connection & session
 │   │
 │   ├── api/
@@ -486,25 +591,32 @@ backend/
 │   │       ├── progress.py     # Progress routes
 │   │       ├── quiz.py         # Quiz routes
 │   │       ├── sentences.py    # Sentence fill routes
-│   │       └── flashcards.py   # Flashcard routes
+│   │       ├── flashcards.py   # Flashcard routes
+│   │       └── levels.py       # Level routes
 │   │
 │   ├── core/
 │   │   ├── __init__.py
 │   │   ├── security.py         # JWT, password hashing
 │   │   ├── config.py           # Settings (Pydantic)
-│   │   └── exceptions.py       # Custom exceptions
+│   │   ├── exceptions.py       # Custom exceptions
+│   │   └── token_blacklist.py  # Token management
 │   │
 │   ├── models/
 │   │   ├── __init__.py
 │   │   ├── user.py             # User SQLAlchemy model
 │   │   ├── vocabulary.py       # VocabularyItem model
+│   │   ├── level.py             # Level and VocabularyLevel models
+│   │   ├── quiz_sentence.py    # QuizSentence model
 │   │   ├── progress.py         # UserProgress model
-│   │   └── quiz.py             # QuizQuestion, SentenceQuestion models
+│   │   ├── quiz.py             # QuizQuestion model
+│   │   └── common.py           # Common model utilities
 │   │
 │   ├── schemas/
 │   │   ├── __init__.py
 │   │   ├── user.py             # User Pydantic schemas
 │   │   ├── vocabulary.py       # VocabularyItem schemas
+│   │   ├── level.py             # Level schemas
+│   │   ├── quiz_sentence.py    # QuizSentence schemas
 │   │   ├── progress.py         # Progress schemas
 │   │   ├── quiz.py             # Quiz schemas
 │   │   └── common.py           # Common schemas (pagination, etc.)
@@ -514,39 +626,43 @@ backend/
 │   │   ├── auth_service.py     # Authentication logic
 │   │   ├── vocabulary_service.py
 │   │   ├── progress_service.py
-│   │   ├── quiz_service.py     # Quiz generation logic
-│   │   └── sentence_service.py # Sentence question generation
+│   │   └── quiz_service.py     # Quiz generation logic
 │   │
 │   ├── repositories/
 │   │   ├── __init__.py
 │   │   ├── base.py             # Base repository pattern
 │   │   ├── user_repository.py
 │   │   ├── vocabulary_repository.py
+│   │   ├── level_repository.py  # Level and VocabularyLevel repositories
+│   │   ├── quiz_sentence_repository.py
 │   │   └── progress_repository.py
 │   │
 │   └── utils/
 │       ├── __init__.py
-│       └── quiz_generator.py   # Quiz question generation algorithms
+│       └── quiz_generator.py   # Quiz and sentence generation (local templates)
+│
+├── data/
+│   ├── vocabulary.csv           # Unified vocabulary (unique words)
+│   ├── vocabulary_levels.csv   # Word-level associations
+│   ├── quiz_sentences_level1.csv
+│   ├── quiz_sentences_level2.csv
+│   ├── quiz_sentences_level3.csv
+│   └── quiz_sentences_level4.csv
+│
+├── scripts/
+│   ├── import_vocabulary_levels.py
+│   └── import_quiz_sentences_levels.py
 │
 ├── tests/
 │   ├── __init__.py
-│   ├── conftest.py             # Pytest fixtures
-│   ├── unit/
-│   │   ├── test_services/
-│   │   ├── test_repositories/
-│   │   └── test_utils/
-│   ├── integration/
-│   │   ├── test_api/
-│   │   └── test_database/
-│   └── e2e/
-│       └── test_api_flows.py
-│
-├── alembic/                    # Database migrations
-│   ├── versions/
-│   └── env.py
+│   ├── conftest.py
+│   ├── test_api_integration.py
+│   ├── test_auth.py
+│   └── test_vocabulary.py
 │
 ├── requirements.txt
-├── .env.example
+├── Dockerfile
+├── docker-compose.yml
 └── README.md
 ```
 
@@ -603,21 +719,44 @@ backend/
 #### vocabulary_items
 
 - `id` UUID PRIMARY KEY
-- `year` VARCHAR(10) NOT NULL (YearGroup enum)
-- `word` VARCHAR(255) NOT NULL
+- `word` VARCHAR(255) UNIQUE NOT NULL (globally unique)
 - `meaning` TEXT NOT NULL
+- `synonyms` JSONB (array of strings)
 - `antonyms` JSONB (array of strings)
 - `example_sentences` JSONB (array of strings)
 - `created_at` TIMESTAMP DEFAULT NOW()
 - `updated_at` TIMESTAMP DEFAULT NOW()
-- UNIQUE(year, word)
+
+#### levels
+
+- `id` UUID PRIMARY KEY
+- `level` INTEGER UNIQUE NOT NULL (1, 2, 3, 4)
+- `name` VARCHAR(50) NOT NULL
+- `description` VARCHAR(255)
+- `created_at` TIMESTAMP DEFAULT NOW()
+
+#### vocabulary_levels
+
+- `id` UUID PRIMARY KEY
+- `vocabulary_item_id` UUID REFERENCES vocabulary_items(id) ON DELETE CASCADE
+- `level_id` UUID REFERENCES levels(id) ON DELETE CASCADE
+- `created_at` TIMESTAMP DEFAULT NOW()
+- UNIQUE(vocabulary_item_id, level_id)
+
+#### quiz_sentences
+
+- `id` UUID PRIMARY KEY
+- `vocabulary_item_id` UUID REFERENCES vocabulary_items(id) ON DELETE CASCADE
+- `sentence` TEXT NOT NULL
+- `created_at` TIMESTAMP DEFAULT NOW()
+- INDEX(vocabulary_item_id)
 
 #### user_progress
 
 - `id` UUID PRIMARY KEY
 - `user_id` UUID REFERENCES users(id) ON DELETE CASCADE
 - `vocabulary_item_id` UUID REFERENCES vocabulary_items(id) ON DELETE CASCADE
-- `year_group` VARCHAR(10) NOT NULL
+- `year_group` VARCHAR(10) NOT NULL (deprecated, kept for backward compatibility)
 - `is_mastered` BOOLEAN DEFAULT FALSE
 - `mastered_at` TIMESTAMP
 - `times_practiced` INTEGER DEFAULT 0
@@ -630,17 +769,92 @@ backend/
 
 - `id` UUID PRIMARY KEY
 - `user_id` UUID REFERENCES users(id)
-- `year` VARCHAR(10) NOT NULL
+- `level` INTEGER NOT NULL
 - `total_questions` INTEGER
 - `correct_answers` INTEGER
 - `completed_at` TIMESTAMP DEFAULT NOW()
 
 ### 4.2 Indexes
 
-- `vocabulary_items(year, word)` - for filtering by year
-- `user_progress(user_id, year_group, is_mastered)` - for progress queries
+- `vocabulary_items(word)` - for word lookups (unique index)
+- `levels(level)` - for level lookups (unique index)
+- `vocabulary_levels(vocabulary_item_id, level_id)` - for level filtering
+- `quiz_sentences(vocabulary_item_id)` - for fetching sentences by word
+- `user_progress(user_id, vocabulary_item_id)` - for progress queries
 - `users(username)` - for login lookups
 - `users(email)` - for email lookups
+
+### 4.3 Entity Relationship Diagram
+
+```
+┌─────────────────┐
+│     users       │
+├─────────────────┤
+│ id (PK)         │
+│ username        │
+│ email           │
+│ password_hash   │
+│ full_name       │
+│ is_active       │
+│ created_at      │
+│ updated_at      │
+└────────┬────────┘
+         │
+         │
+         ▼
+┌─────────────────────┐
+│   user_progress     │
+├─────────────────────┤
+│ id (PK)             │
+│ user_id (FK)        │
+│ vocabulary_item_id  │
+│ year_group          │
+│ is_mastered         │
+│ mastered_at         │
+│ times_practiced     │
+│ last_practiced_at   │
+│ created_at          │
+│ updated_at          │
+└──────────┬──────────┘
+           │
+           │
+           ▼
+┌─────────────────────┐       ┌─────────────────────┐
+│  vocabulary_items  │       │      levels         │
+├─────────────────────┤       ├─────────────────────┤
+│ id (PK)             │       │ id (PK)             │
+│ word (UNIQUE)       │       │ level (UNIQUE)      │
+│ meaning             │       │ name                │
+│ synonyms (JSONB)    │       │ description         │
+│ antonyms (JSONB)    │       │ created_at          │
+│ example_sentences   │       └──────────┬──────────┘
+│ created_at          │                  │
+│ updated_at          │                  │
+└──────────┬──────────┘                  │
+           │                              │
+           │    ┌─────────────────────────┘
+           │    │
+           │    ▼
+           │  ┌─────────────────────┐
+           │  │ vocabulary_levels   │
+           │  ├─────────────────────┤
+           │  │ id (PK)             │
+           │  │ vocabulary_item_id  │
+           │  │ level_id            │
+           │  │ created_at          │
+           │  └─────────────────────┘
+           │
+           │
+           ▼
+┌─────────────────────┐
+│   quiz_sentences    │
+├─────────────────────┤
+│ id (PK)             │
+│ vocabulary_item_id  │
+│ sentence            │
+│ created_at          │
+└─────────────────────┘
+```
 
 ## 5. Security Requirements
 
@@ -671,9 +885,77 @@ backend/
 - Allow specific origins (iOS app domains)
 - Credentials support for authenticated requests
 
-## 6. Testing Requirements
+## 6. Data Requirements
 
-### 6.1 Unit Tests
+### 6.1 Vocabulary Data
+
+The vocabulary system uses globally unique words organized by levels:
+
+- **Total unique words:** 801
+- **Words can appear in multiple levels** if appropriate (149 words appear in multiple levels)
+
+| Level | Word Count | Age Range | Difficulty | Previously |
+|-------|------------|-----------|------------|------------|
+| Level 1 | 246 | 7-8 | Beginner | Year 3 |
+| Level 2 | 248 | 8-9 | Elementary | Year 4 |
+| Level 3 | 244 | 9-10 | Intermediate | Year 5 |
+| Level 4 | 234 | 10-11 | Advanced | Year 6 |
+
+Each vocabulary word includes:
+- Word (globally unique)
+- Meaning (child-friendly definition)
+- Synonyms (2-3 similar words)
+- Antonyms (2-3 opposite words)
+- Example sentences (1-2 usage examples)
+- Level associations (one or more levels: 1, 2, 3, or 4)
+
+### 6.2 Quiz Sentences
+
+Each vocabulary word has multiple associated fill-in-the-blank quiz sentences.
+
+- Format: Sentence with `_____` blank placeholder
+- Purpose: Test word usage in context
+- Total: ~6,000+ quiz sentences across all levels
+
+| Level | Sentences |
+|-------|-----------|
+| Level 1 | ~2,249 sentences |
+| Level 2 | ~1,325 sentences |
+| Level 3 | ~1,853 sentences |
+| Level 4 | ~1,602 sentences |
+
+### 6.3 CSV Data Format
+
+#### Vocabulary CSV Format
+
+**vocabulary.csv:**
+```csv
+word,meaning,synonyms,antonyms,example_sentences
+abundant,having a lot of something; plentiful,plentiful;lots;plenty,scarce;rare;few,The garden was abundant with colorful flowers.
+```
+
+**vocabulary_levels.csv:**
+```csv
+word,level
+abundant,1
+abundant,2
+```
+
+- Lists use semicolon (`;`) as separator within fields
+- Words are globally unique in vocabulary.csv
+- Level associations are in vocabulary_levels.csv
+
+#### Quiz Sentences CSV Format
+
+```csv
+level,word,sentence
+1,abundant,The forest was _____ with wildlife.
+1,abundant,There was an _____ supply of fresh water.
+```
+
+## 7. Testing Requirements
+
+### 7.1 Unit Tests
 
 - **Coverage Target:** Minimum 80%
 - **Test Files:**
@@ -683,7 +965,7 @@ backend/
   - Security functions (password hashing, JWT)
 - **Mocking:** Use pytest-mock for external dependencies
 
-### 6.2 Integration Tests
+### 7.2 Integration Tests
 
 - **API Endpoint Tests:**
   - All CRUD operations
@@ -696,7 +978,7 @@ backend/
   - Foreign key constraints
 - **Use TestClient:** FastAPI's TestClient for API testing
 
-### 6.3 End-to-End Tests
+### 7.3 End-to-End Tests
 
 - **Complete User Flows:**
   - User registration → login → vocabulary fetch → progress update → quiz generation → quiz submission
@@ -705,15 +987,9 @@ backend/
   - Response time < 200ms for simple queries
   - Response time < 500ms for complex queries (quiz generation)
 
-### 6.4 Test Data
+## 8. Error Handling
 
-- Fixtures for common test data (users, vocabulary items)
-- Factory pattern for generating test data
-- Seed data for development environment
-
-## 7. Error Handling
-
-### 7.1 HTTP Status Codes
+### 8.1 HTTP Status Codes
 
 - `200 OK` - Successful GET, PUT, PATCH
 - `201 Created` - Successful POST (resource created)
@@ -725,7 +1001,7 @@ backend/
 - `422 Unprocessable Entity` - Validation errors
 - `500 Internal Server Error` - Server errors
 
-### 7.2 Error Response Format
+### 8.2 Error Response Format
 
 ```json
 {
@@ -735,27 +1011,15 @@ backend/
 }
 ```
 
-### 7.3 Custom Exceptions
+### 8.3 Custom Exceptions
 
 - `VocabularyNotFoundError`
+- `QuizSentenceNotFoundError`
+- `LevelNotFoundError`
 - `UserNotFoundError`
 - `UnauthorizedError`
 - `ForbiddenError`
 - `ValidationError`
-
-## 8. API Documentation
-
-### 8.1 OpenAPI/Swagger
-
-- Auto-generated from FastAPI
-- Available at `/docs` endpoint
-- Include request/response examples
-- Authentication scheme documentation
-
-### 8.2 ReDoc
-
-- Alternative documentation at `/redoc`
-- User-friendly API reference
 
 ## 9. Performance Requirements
 
@@ -774,8 +1038,8 @@ backend/
 
 ### 9.3 Caching (Optional)
 
-- Cache year groups (rarely changes)
-- Cache vocabulary lists per year (with invalidation on updates)
+- Cache levels (rarely changes)
+- Cache vocabulary lists per level (with invalidation on updates)
 
 ## 10. Deployment Considerations
 
@@ -799,62 +1063,35 @@ backend/
 - `GET /health` - Basic health check
 - `GET /health/db` - Database connectivity check
 
-## 11. Data Migration
+## 11. Implementation Notes
 
-### 11.1 Initial Data
+1. **Level-Based System:**
+   - Words are globally unique (no duplicates)
+   - Level associations allow words to appear in multiple levels
+   - Migration script converts old year-based data to new format
 
-- Seed vocabulary items from JSON files (Year3.json, Year4.json, etc.)
-- Migration script to import initial vocabulary data
-- Support for adding new year groups in the future
-
-## 12. Logging
-
-### 12.1 Log Levels
-
-- INFO: Normal operations
-- WARNING: Deprecated usage, recoverable errors
-- ERROR: Exceptions, failed operations
-- DEBUG: Detailed debugging (development only)
-
-### 12.2 Log Format
-
-- Structured logging (JSON format for production)
-- Include: timestamp, level, message, user_id (if authenticated), request_id
-
-## 13. Future Enhancements (Out of Scope but Documented)
-
-- Analytics endpoints (learning progress over time)
-- Admin dashboard API
-- Bulk vocabulary import/export
-- Audio pronunciation API (text-to-speech)
-- Spaced repetition algorithm integration
-- Multi-language support
-- Social features (leaderboards, sharing progress)
-
----
-
-## Implementation Notes
-
-1. **Quiz Generation Algorithm:**
-
-   - Select mastered words for the year
+2. **Quiz Generation Algorithm:**
+   - Select mastered words for the level
    - For each word, create a question with the word as prompt
    - Generate 3 distractors from other mastered words' meanings
    - Randomly place correct answer among options
 
-2. **Sentence Question Generation:**
-
-   - Filter vocabulary items with example sentences
-   - Replace the word in sentence with {word} placeholder
-   - Generate 3 distractors from other words
+3. **Sentence Question Generation:**
+   - Fetch pre-stored quiz sentences from database
+   - Filter by level through vocabulary-level associations
+   - Generate 3 distractors from other words in the same level
    - Randomly place correct word among options
 
-3. **Progress Tracking:**
-
+4. **Progress Tracking:**
    - Track both mastery status and practice frequency
    - Support for future analytics (learning curve, retention rate)
+   - Level-based progress queries
 
-4. **Database Choice:**
-
+5. **Database Choice:**
    - PostgreSQL recommended for production (JSONB support for arrays)
    - SQLite acceptable for development/testing
+
+6. **Data Import:**
+   - Use `scripts/import_vocabulary_levels.py` to import vocabulary and level associations
+   - Use `scripts/import_quiz_sentences_levels.py` to import quiz sentences by level
+   - Data files: vocabulary.csv, vocabulary_levels.csv, quiz_sentences_level*.csv

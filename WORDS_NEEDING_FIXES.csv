@@ -1,0 +1,21 @@
+word,level,issue_type,current_value,recommended_fix,priority
+advice,1,bad_antonym,"[""silence"", ""criticism"", ""misleading""]","[""bad advice"", ""misguidance"", ""warning""]",HIGH
+amaze,1,bad_antonym,"[""bore"", ""disappoint"", ""expect""]","[""bore"", ""underwhelm"", ""disappoint""]",HIGH
+adventure,1,bad_antonym,"[""routine"", ""boredom"", ""safety""]","[""routine"", ""boredom"", ""dullness""]",HIGH
+counsel,2,bad_antonym,"[""silence"", ""ignorance"", ""misguidance""]","[""misguidance"", ""bad advice"", ""deception""]",HIGH
+accolade,3,bad_antonym,"[""censure"", ""condemnation"", ""criticism""]","[""disgrace"", ""dishonour"", ""shame""]",HIGH
+adulation,3,bad_antonym,"[""censure"", ""condemnation"", ""criticism""]","[""disdain"", ""contempt"", ""scorn""]",HIGH
+cacophony,4,bad_antonym,"[""harmony"", ""melody"", ""silence""]","[""harmony"", ""melody"", ""euphony""]",MEDIUM
+approbation,4,bad_antonym,"[""condemnation"", ""criticism"", ""disapproval""]","[""disapproval"", ""censure"", ""condemnation""]",MEDIUM
+astonish,2,bad_antonym,"[""bore"", ""expect"", ""predict""]","[""bore"", ""underwhelm"", ""disappoint""]",MEDIUM
+astound,3,bad_antonym,"[""bore"", ""underwhelm"", ""expect""]","[""bore"", ""underwhelm"", ""disappoint""]",MEDIUM
+abrupt,2,merged_meaning,"sudden and unexpected; or rude in manner","Split into two entries: 1) sudden and unexpected 2) rude in manner",MEDIUM
+bitter,2,merged_meaning,"having a sharp unpleasant taste; or resentful","Split into two entries: 1) having a sharp unpleasant taste 2) resentful",MEDIUM
+current,1,merged_meaning,"happening now; or a flow of water or electricity","Split into two entries: 1) happening now; present 2) a flow of water or electricity",MEDIUM
+fair,1,merged_meaning,"treating everyone equally; or light in colour","Split into two entries: 1) treating everyone equally; just 2) light in colour; pale",MEDIUM
+abate,4,quiz_sentence,"Her fears gradually _____d.","The storm began to _____ by evening.",MEDIUM
+abate,4,quiz_sentence,"Interest in the scandal began to _____.","Interest in the topic began to _____.",MEDIUM
+abjure,4,quiz_sentence,"The convert _____d the old religion.","She decided to _____ her previous opinion.",MEDIUM
+alacrity,4,quiz_sentence,"He responded to the call with _____.","She accepted the challenge with _____.",MEDIUM
+detrimental,3,quiz_sentence,"The change was _____ to morale.","Too much screen time can be _____ to health.",MEDIUM
+abandon,1,synonym_issue,"[""leave"", ""desert"", ""forsake""]","[""leave"", ""desert"", ""give up""] - 'forsake' is more difficult than 'abandon'",LOW

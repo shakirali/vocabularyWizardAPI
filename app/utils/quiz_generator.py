@@ -5,7 +5,6 @@ from typing import List, Optional
 
 from app.models.quiz import QuizQuestion
 from app.models.vocabulary import VocabularyItem
-from app.utils.ollama_service import ollama_service
 
 logger = logging.getLogger(__name__)
 
@@ -56,16 +55,15 @@ def generate_quiz_questions(
 def generate_sentence_questions(
     vocabulary_items: List[VocabularyItem],
     question_count: Optional[int] = None,
-    use_ollama: bool = True,
 ) -> List[dict]:
     """
     Generate sentence fill-in-the-blank questions.
-    Uses Ollama to generate sentences if example sentences are not available.
+    Uses existing example sentences where possible, and falls back to
+    simple, locally generated sentences based on the word and meaning.
 
     Args:
         vocabulary_items: List of vocabulary items to generate questions from
         question_count: Optional limit on number of questions to generate
-        use_ollama: If True, use Ollama to generate sentences when example_sentences are missing
 
     Returns:
         List of dicts with question data (not SQLAlchemy models).
@@ -80,6 +78,45 @@ def generate_sentence_questions(
     questions = []
     all_words = [item.word for item in vocabulary_items]
 
+    def _generate_local_sentence(word: str, meaning: str) -> str:
+        """
+        Generate a simple, deterministic sentence for a word using only
+        local templates (no external AI services).
+        """
+        meaning_lower = (meaning or "").lower()
+        is_verb = meaning_lower.startswith("to ")
+        is_adjective = any(
+            marker in meaning_lower
+            for marker in [
+                "having ",
+                "showing ",
+                "full of",
+                "characterised by",
+                "characterized by",
+                "very ",
+                "extremely ",
+                "quite ",
+                "rather ",
+                "causing ",
+                "deserving ",
+            ]
+        )
+
+        if is_verb:
+            template = (
+                f"They decided to {word} carefully because of the situation."
+            )
+        elif is_adjective:
+            template = (
+                f"It was a very {word} moment that everyone remembered."
+            )
+        else:
+            template = (
+                f"The {word} was important in understanding the story."
+            )
+
+        return template
+
     for item in selected_items:
         display_sentence = None
         sentence_template = None
@@ -91,27 +128,15 @@ def generate_sentence_questions(
             sentence_template = sentence.replace(item.word, "{word}")
             display_sentence = sentence.replace(item.word, "_____")
             logger.debug(f"Using existing example sentence for word: {item.word}")
-        elif use_ollama:
-            # Generate sentence using Ollama
-            logger.info(f"Generating sentence using Ollama for word: {item.word}")
-            generated_sentence = ollama_service.generate_sentence_with_blank(
-                word=item.word, meaning=item.meaning
-            )
-
-            if generated_sentence:
-                display_sentence = generated_sentence
-                # Create template with {word} placeholder for potential future use
-                sentence_template = generated_sentence.replace("_____", "{word}")
-                logger.info(f"Successfully generated sentence for word: {item.word}")
-            else:
-                logger.warning(
-                    f"Failed to generate sentence for word: {item.word}, skipping..."
-                )
-                continue
         else:
-            # Skip items without example sentences if Ollama is disabled
-            logger.debug(f"Skipping word '{item.word}' - no example sentences available")
-            continue
+            # Fall back to a locally generated sentence
+            logger.debug(
+                "No example sentences for word '%s', using local template",
+                item.word,
+            )
+            base_sentence = _generate_local_sentence(item.word, item.meaning)
+            sentence_template = base_sentence.replace(item.word, "{word}")
+            display_sentence = base_sentence.replace(item.word, "_____")
 
         # Create options: correct word + 3 distractors
         options = [item.word]

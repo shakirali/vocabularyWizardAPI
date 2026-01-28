@@ -143,16 +143,3 @@ class TestProgressAPI:
         assert progress_response.status_code == status.HTTP_201_CREATED
         progress_data = progress_response.json()
         assert progress_data["is_mastered"] is True
-
-
-class TestYearGroups:
-    """Test year groups endpoint."""
-    
-    def test_get_year_groups(self, client):
-        """Test getting all year groups."""
-        response = client.get("/api/v1/years")
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert isinstance(data, list)
-        assert len(data) == 4  # year3, year4, year5, year6
-        assert all("value" in item and "display_name" in item for item in data)

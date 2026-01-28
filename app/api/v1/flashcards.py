@@ -13,13 +13,13 @@ router = APIRouter()
 
 @router.get("", response_model=PaginatedResponse[VocabularyItemResponse])
 def get_flashcards(
-    year: str,
+    level: int,
     skip: int = 0,
     limit: int = 5,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Get flashcards for a year (paginated)."""
+    """Get flashcards for a level (paginated)."""
     vocab_service = VocabularyService(db)
-    items, total = vocab_service.get_all(year=year, skip=skip, limit=limit)
+    items, total = vocab_service.get_all(level=level, skip=skip, limit=limit)
     return PaginatedResponse(items=items, total=total, skip=skip, limit=limit)
