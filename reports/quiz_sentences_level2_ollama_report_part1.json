@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-01-29T14:51:23.597353+00:00",
+  "input_csv": "/Users/shakirali/iOSApps/vocabularyWizardAPI/data/quiz_sentences_level2.csv",
+  "spec_file": "/Users/shakirali/iOSApps/vocabularyWizardAPI/specifications/vocabularySpecification.md",
+  "ollama": {
+    "base_url": "http://localhost:11434",
+    "model": "gemma3:latest"
+  },
+  "csv_headers": [
+    "level",
+    "word",
+    "sentence"
+  ],
+  "csv_level_counts": {
+    "2": 3697
+  },
+  "words_examined": 20,
+  "prechecks": {
+    "words_not_10_sentences": 4,
+    "rows_using_underscores": 188,
+    "rows_using_blank_tag": 0,
+    "rows_with_blank_count_not_1_after_normalisation": 0
+  },
+  "model_summary": {
+    "words_pass": 0,
+    "words_fail": 20,
+    "words_pass_ignoring_placeholder_not_blank": 0,
+    "words_fail_ignoring_placeholder_not_blank": 20,
+    "sentence_results": 188,
+    "sentence_fail": 188,
+    "sentence_fail_ignoring_placeholder_not_blank": 188,
+    "top_issues": [
+      [
+        "missing_model_output",
+        188
+      ]
+    ]
+  },
+  "results": []
+}
