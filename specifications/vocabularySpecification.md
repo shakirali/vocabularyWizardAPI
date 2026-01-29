@@ -55,6 +55,7 @@ These criteria apply to **everything you generate or evaluate**, including meani
 - Use strong contextual clues (contrast, cause/effect, description, outcome)
 - Avoid repetitive sentence patterns across the set
 - Avoid giving away the answer by using direct synonyms in the same sentence
+_ Keep each sentence short, natural, and story‑like.
 
 ---
 
@@ -142,16 +143,25 @@ For each word, generate **10 quiz sentences** where the target word is replaced 
 
 Rules:
 - Each sentence must contain **exactly one `<blank>`**
+- Use `<blank>` (not underscores) as the placeholder
 - Use strong context clues
 - Follow the **Shared High Educational Quality Criteria**
 
 ### Output format (CSV only)
 Return CSV with the exact headers:
 ```csv
-word,quiz_sentence
+level,word,quiz_sentence
 ```
 
 > **One row per quiz sentence = 10 rows per word**
+
+### Example 1: Word Reluctant
+He was <blank> to speak because he was unsure of the answer.
+He gave a <blank> nod, but didn't want to agree.
+The company was <blank> to invest more money.
+Students are often <blank> to ask questions in class.
+The <blank> superhero eventually saves the day.
+
 
 ---
 
