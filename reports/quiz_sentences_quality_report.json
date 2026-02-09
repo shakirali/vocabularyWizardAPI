@@ -1,0 +1,322 @@
+{
+  "1": {
+    "path": "/Users/shakirali/iOSApps/vocabularyWizardAPI/data/quiz_sentences_level1.csv",
+    "level": 1,
+    "total_rows": 3040,
+    "blank_ok": 3040,
+    "blank_wrong": 0,
+    "underscore_placeholder": 0,
+    "empty_or_very_short": 0,
+    "duplicate_pairs": 0,
+    "duplicate_examples": [],
+    "wrong_per_word": [],
+    "unique_words": 304,
+    "american_spelling": [
+      {
+        "row": 205,
+        "word": "Alibi",
+        "expected": "practise",
+        "snippet": "She had an <blank> because the coach saw her at practice."
+      },
+      {
+        "row": 314,
+        "word": "Apex",
+        "expected": "practise",
+        "snippet": "After years of practice, his performance at the regional finals felt like the <b"
+      },
+      {
+        "row": 344,
+        "word": "Apprise",
+        "expected": "practise",
+        "snippet": "The coach asked the assistant to <blank> the players of the new practice time."
+      },
+      {
+        "row": 1098,
+        "word": "Contend",
+        "expected": "practise",
+        "snippet": "At practice, the starters <blank> with the rookies for a spot on the field."
+      },
+      {
+        "row": 1158,
+        "word": "Credit",
+        "expected": "practise",
+        "snippet": "After months of practice, he received <blank> for the flawless recital."
+      },
+      {
+        "row": 1212,
+        "word": "Curtail",
+        "expected": "practise",
+        "snippet": "When the rain started, the coach had to <blank> practice and send everyone insid"
+      },
+      {
+        "row": 1362,
+        "word": "Demote",
+        "expected": "practise",
+        "snippet": "After skipping practice for a week, the coach chose to <blank> the captain to th"
+      },
+      {
+        "row": 1481,
+        "word": "Devour",
+        "expected": "practise",
+        "snippet": "After practice, the team would <blank> their sandwiches on the bus ride home."
+      },
+      {
+        "row": 1497,
+        "word": "Digest",
+        "expected": "practise",
+        "snippet": "A nap helped her <blank> the heavy lunch before practice."
+      },
+      {
+        "row": 1657,
+        "word": "Earnest",
+        "expected": "practise",
+        "snippet": "The coach saw his <blank> focus during extra practice and put him in the startin"
+      },
+      {
+        "row": 1816,
+        "word": "Expel",
+        "expected": "practise",
+        "snippet": "The coach threatened to <blank> anyone who skipped practice again."
+      },
+      {
+        "row": 1827,
+        "word": "Expunge",
+        "expected": "offence",
+        "snippet": "The judge agreed to <blank> the minor offense after the service hours were compl"
+      },
+      {
+        "row": 2003,
+        "word": "Florid",
+        "expected": "favour",
+        "snippet": "The letter turned <blank>, praising every tiny favor in three paragraphs."
+      },
+      {
+        "row": 2327,
+        "word": "Hiatus",
+        "expected": "practise",
+        "snippet": "The team's <blank> ended when their captain finally healed and rejoined practice"
+      },
+      {
+        "row": 2385,
+        "word": "Idiom",
+        "expected": "practise",
+        "snippet": "The coach's <blank> about \"running out of steam\" made the team grin as practice "
+      },
+      {
+        "row": 2486,
+        "word": "Induce",
+        "expected": "practise",
+        "snippet": "The coach's pep talk could <blank> the team to practice harder."
+      },
+      {
+        "row": 2634,
+        "word": "Kowtow",
+        "expected": "favour",
+        "snippet": "She promised never to <blank> for favor, choosing honesty over flattery."
+      },
+      {
+        "row": 2774,
+        "word": "Rant",
+        "expected": "practise",
+        "snippet": "The coach's <blank> about lazy practice echoed in the locker room."
+      },
+      {
+        "row": 2826,
+        "word": "Tardy",
+        "expected": "practise",
+        "snippet": "He was <blank> to practice and ran extra laps."
+      },
+      {
+        "row": 2988,
+        "word": "Mogul",
+        "expected": "centre",
+        "snippet": "The sports <blank> built a training center next to the school."
+      }
+    ],
+    "repetitive_starts": [],
+    "issues": [],
+    "issues_truncated": false
+  },
+  "2": {
+    "path": "/Users/shakirali/iOSApps/vocabularyWizardAPI/data/quiz_sentences_level2.csv",
+    "level": 2,
+    "total_rows": 3820,
+    "blank_ok": 3820,
+    "blank_wrong": 0,
+    "underscore_placeholder": 0,
+    "empty_or_very_short": 0,
+    "duplicate_pairs": 0,
+    "duplicate_examples": [],
+    "wrong_per_word": [],
+    "unique_words": 382,
+    "american_spelling": [
+      {
+        "row": 73,
+        "word": "Abysmal",
+        "expected": "practise",
+        "snippet": "Despite months of practice, Gerald's performance at the piano recital was <blank"
+      },
+      {
+        "row": 201,
+        "word": "Amateur",
+        "expected": "practise",
+        "snippet": "Catherine's transition from <blank> photographer to professional required years "
+      },
+      {
+        "row": 371,
+        "word": "Aspire",
+        "expected": "practise",
+        "snippet": "She <blank> to overcome her fear of public speaking through practice and determi"
+      },
+      {
+        "row": 1062,
+        "word": "deluded",
+        "expected": "practise",
+        "snippet": "He was <blank> if he thought he could win without practice."
+      },
+      {
+        "row": 1990,
+        "word": "immoral",
+        "expected": "practise",
+        "snippet": "The <blank> practice was widespread in the industry."
+      }
+    ],
+    "repetitive_starts": [],
+    "issues": [],
+    "issues_truncated": false
+  },
+  "3": {
+    "path": "/Users/shakirali/iOSApps/vocabularyWizardAPI/data/quiz_sentences_level3.csv",
+    "level": 3,
+    "total_rows": 4460,
+    "blank_ok": 4460,
+    "blank_wrong": 0,
+    "underscore_placeholder": 0,
+    "empty_or_very_short": 0,
+    "duplicate_pairs": 0,
+    "duplicate_examples": [],
+    "wrong_per_word": [],
+    "unique_words": 446,
+    "american_spelling": [
+      {
+        "row": 26,
+        "word": "abhorrent",
+        "expected": "practise",
+        "snippet": "They considered the practice <blank> and campaigned to end it."
+      },
+      {
+        "row": 1126,
+        "word": "customary",
+        "expected": "practise",
+        "snippet": "The <blank> practice had been abandoned."
+      }
+    ],
+    "repetitive_starts": [
+      [
+        "She had been <blank> in h",
+        26
+      ],
+      [
+        "His <blank> behaviour had",
+        19
+      ],
+      [
+        "She had refused to <blank",
+        19
+      ],
+      [
+        "The <blank> nature of the",
+        17
+      ],
+      [
+        "She had been accused of <",
+        16
+      ]
+    ],
+    "issues": [],
+    "issues_truncated": false
+  },
+  "4": {
+    "path": "/Users/shakirali/iOSApps/vocabularyWizardAPI/data/quiz_sentences_level4.csv",
+    "level": 4,
+    "total_rows": 4610,
+    "blank_ok": 4610,
+    "blank_wrong": 0,
+    "underscore_placeholder": 0,
+    "empty_or_very_short": 0,
+    "duplicate_pairs": 0,
+    "duplicate_examples": [],
+    "wrong_per_word": [],
+    "unique_words": 461,
+    "american_spelling": [
+      {
+        "row": 2438,
+        "word": "lucrative",
+        "expected": "practise",
+        "snippet": "His <blank> practice had been built over thirty years."
+      },
+      {
+        "row": 3637,
+        "word": "reprehensible",
+        "expected": "practise",
+        "snippet": "The <blank> practice had been banned."
+      }
+    ],
+    "repetitive_starts": [
+      [
+        "The <blank> had been the ",
+        66
+      ],
+      [
+        "His <blank> had been the ",
+        57
+      ],
+      [
+        "The <blank> nature of the",
+        43
+      ],
+      [
+        "She had written about the",
+        39
+      ],
+      [
+        "She had found his <blank>",
+        27
+      ],
+      [
+        "She had been accused of <",
+        26
+      ],
+      [
+        "She had found the <blank>",
+        24
+      ],
+      [
+        "The <blank> tone had been",
+        24
+      ],
+      [
+        "She had been <blank> in h",
+        19
+      ],
+      [
+        "His <blank> behaviour had",
+        18
+      ],
+      [
+        "His <blank> nature had be",
+        18
+      ],
+      [
+        "His <blank> attitude had ",
+        17
+      ],
+      [
+        "She had written a <blank>",
+        16
+      ]
+    ],
+    "issues": [],
+    "issues_truncated": false
+  }
+}
